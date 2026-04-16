@@ -1,0 +1,81 @@
+spring:
+  application:
+    name: artha-payment-engine
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/artha}
+    username: ${DATABASE_USER:artha}
+    password: ${DATABASE_PASSWORD:artha}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
+      hibernate.jdbc.batch_size: 50
+      hibernate.order_inserts: true
+      hibernate.order_updates: true
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+server:
+  port: 8080
+  compression:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: artha
+  tracing:
+    sampling:
+      probability: 1.0  # 100% sampling in dev; lower in prod
+  otlp:
+    tracing:
+      endpoint: ${OTEL_ENDPOINT:http://localhost:4318/v1/traces}
+  endpoint:
+    health:
+      show-details: when_authorized
+
+artha:
+  security:
+    jwt-secret: ${JWT_SECRET:change-me-in-production-this-must-be-at-least-256-bits-long}
+    jwt-ttl-minutes: 60
+  outbox:
+    batch-size: 100
+    poll-ms: 500
+  rate-limit:
+    capacity: 100
+    refill-per-second: 50
+  circuit:
+    failures: 5
+    open-seconds: 30
+    half-open-probes: 3
+  snapshot:
+    every-n: 50
+
+logging:
+  level:
+    com.artha: INFO
+    org.springframework: WARN
+    org.hibernate.SQL: WARN
+  pattern:
+    level: "%5p [%X{correlationId:-}]"
